@@ -424,20 +424,17 @@
             function applyStep2(data) {
                 const dataMap = new Map(data.map(d => [d.ts, d]));
                 const datePart = data[0].ts.split(' ')[0];
-                const startDate = new Date(`${datePart} 08:00`);
-                const endDate = new Date(`${datePart} 17:00`);
-                
                 const fullRange = [];
-                let currentDate = new Date(startDate);
-
-                while (currentDate <= endDate) {
-                    const tsString = currentDate.toISOString().slice(0, 16).replace('T', ' ');
+                
+                for (let hour = 8; hour <= 17; hour++) {
+                    const hourString = hour.toString().padStart(2, '0');
+                    const tsString = `${datePart} ${hourString}:00`;
+                    
                     if (dataMap.has(tsString)) {
                         fullRange.push(dataMap.get(tsString));
                     } else {
                         fullRange.push({ts: tsString, temp: null, hum: null, state: 'added'});
                     }
-                    currentDate.setHours(currentDate.getHours() + 1);
                 }
                 return fullRange;
             }
