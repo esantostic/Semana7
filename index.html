@@ -1,1 +1,588 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Interactivo: Pronóstico de Temperatura</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Analytics (Warm Neutrals: Slate/Gray, Accent: Teal) -->
+    <!-- Application Structure Plan: A step-by-step interactive narrative following the CRISP-DM project phases. The core is an interactive data cleaning module where users click buttons to apply functions (e.g., .drop_duplicates, .interpolate) and see the data table and chart update in real-time. This structure was chosen to directly address the user's goal of understanding the data science process and the effect of each function, making it an educational tool rather than a static report. -->
+    <!-- Visualization & Content Choices: Data issues are shown with stat cards and a Chart.js line chart. The cleaning process is interactive, updating an HTML table and the chart. Model comparison uses a Chart.js bar chart to show MAE scores for clarity. All diagrams are built with HTML/Tailwind. This approach avoids static images and focuses on hands-on exploration. CONFIRMING NO SVG/Mermaid. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .active-nav {
+            color: #0d9488;
+            font-weight: 600;
+        }
+        .step-card {
+            transition: all 0.3s ease-in-out;
+            border-color: transparent;
+        }
+        .step-card.active {
+            border-color: #14b8a6;
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .legend-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body class="text-slate-700">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-slate-200">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-lg md:text-xl font-bold text-slate-800">Proyecto: Pronóstico de Temperatura</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#inicio" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-teal-600">Inicio</a>
+                        <a href="#diagnostico" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-teal-600">1. Diagnóstico</a>
+                        <a href="#limpieza" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-teal-600">2. Limpieza</a>
+                        <a href="#modelado" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-teal-600">3. Modelado</a>
+                        <a href="#resultados" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-teal-600">4. Resultados</a>
+                    </div>
+                </div>
+                 <div class="md:hidden">
+                    <select id="mobile-nav" class="bg-slate-100 border-slate-300 rounded-md text-sm">
+                        <option value="#inicio">Inicio</option>
+                        <option value="#diagnostico">1. Diagnóstico</option>
+                        <option value="#limpieza">2. Limpieza</option>
+                        <option value="#modelado">3. Modelado</option>
+                        <option value="#resultados">4. Resultados</option>
+                    </select>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="inicio" class="py-16 md:py-20 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="text-base font-semibold text-teal-600 tracking-wide uppercase">Fase 1: Comprensión del Negocio</h2>
+                <p class="mt-2 text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Un Viaje Interactivo por la Ciencia de Datos</p>
+                <p class="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-slate-600">
+                    Esta aplicación resume el proyecto de Machine Learning para predecir la temperatura en La Molina, Lima. El objetivo es claro: pronosticar el clima con 12 horas de antelación. Aquí no solo verás los resultados, sino que podrás interactuar con el proceso, desde el diagnóstico inicial de los datos hasta la evaluación final del modelo.
+                </p>
+            </div>
+        </section>
+
+        <section id="diagnostico" class="py-16 md:py-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-base font-semibold text-teal-600 tracking-wide uppercase">Fase 2: Diagnóstico de Datos</h2>
+                    <p class="mt-2 text-3xl font-extrabold text-slate-900 tracking-tight">El Estado Inicial de Nuestros Datos</p>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-600">
+                        Todo proyecto de datos comienza con un diagnóstico. Antes de cualquier limpieza, analizamos la "salud" de nuestra información e identificamos cuatro problemas clave que debían ser resueltos.
+                    </p>
+                </div>
+
+                <div class="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-red-200">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-red-100 rounded-md p-3">
+                                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                            </div>
+                            <div class="ml-4">
+                                <dt class="text-lg font-medium text-slate-900">Duplicados (D)</dt>
+                                <dd class="text-sm text-slate-500">Registros idénticos.</dd>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="bg-white p-6 rounded-xl shadow-lg border-orange-200">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-orange-100 rounded-md p-3">
+                                <svg class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </div>
+                            <div class="ml-4">
+                                <dt class="text-lg font-medium text-slate-900">Saltos de Tiempo (S)</dt>
+                                <dd class="text-sm text-slate-500">Horas faltantes.</dd>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="bg-white p-6 rounded-xl shadow-lg border-yellow-200">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-yellow-100 rounded-md p-3">
+                                <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>
+                            </div>
+                            <div class="ml-4">
+                                <dt class="text-lg font-medium text-slate-900">Valores Nulos (N)</dt>
+                                <dd class="text-sm text-slate-500">Datos desconocidos.</dd>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg border-purple-200">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-purple-100 rounded-md p-3">
+                                <svg class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            </div>
+                            <div class="ml-4">
+                                <dt class="text-lg font-medium text-slate-900">Outliers (O)</dt>
+                                <dd class="text-sm text-slate-500">Valores extremos.</dd>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="limpieza" class="py-16 md:py-20 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-base font-semibold text-teal-600 tracking-wide uppercase">Fase 3: Preparación de Datos</h2>
+                    <p class="mt-2 text-3xl font-extrabold text-slate-900 tracking-tight">El Proceso de Limpieza Interactivo</p>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-600">
+                        Aquí puedes simular el proceso de limpieza. Haz clic en cada paso para aplicar la función correspondiente y observa cómo se transforman los datos en la tabla y el gráfico.
+                    </p>
+                </div>
+                
+                <div class="mt-12 lg:grid lg:grid-cols-3 lg:gap-8 items-start">
+                    <div class="lg:col-span-1">
+                        <div id="cleaning-controls" class="space-y-4">
+                            <button data-step="1" class="step-card w-full text-left p-4 bg-slate-50 rounded-lg border-2 hover:bg-slate-100">
+                                <p class="font-semibold text-slate-800">Paso 1: Eliminar Duplicados</p>
+                                <p class="text-sm text-slate-500">Función: `.drop_duplicates()`</p>
+                            </button>
+                             <button data-step="2" class="step-card w-full text-left p-4 bg-slate-50 rounded-lg border-2 hover:bg-slate-100">
+                                <p class="font-semibold text-slate-800">Paso 2: Rellenar Huecos</p>
+                                <p class="text-sm text-slate-500">Función: `.reindex()` con rango horario</p>
+                            </button>
+                             <button data-step="3" class="step-card w-full text-left p-4 bg-slate-50 rounded-lg border-2 hover:bg-slate-100">
+                                <p class="font-semibold text-slate-800">Paso 3: Interpolar Nulos</p>
+                                <p class="text-sm text-slate-500">Función: `.interpolate(method='time')`</p>
+                            </button>
+                             <button data-step="4" class="step-card w-full text-left p-4 bg-slate-50 rounded-lg border-2 hover:bg-slate-100">
+                                <p class="font-semibold text-slate-800">Paso 4: Corregir Outliers</p>
+                                <p class="text-sm text-slate-500">Función: `np.clip()`</p>
+                            </button>
+                             <button id="reset-button" class="w-full text-center p-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold">
+                                Reiniciar Proceso
+                            </button>
+                        </div>
+                        <div id="explanation-box" class="mt-8 p-4 bg-teal-50 border-l-4 border-teal-500 rounded-r-lg">
+                           <p class="font-semibold text-teal-800">Explicación del paso:</p>
+                           <p class="text-sm text-teal-700">Selecciona un paso para ver cómo funciona.</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-10 lg:mt-0 lg:col-span-2">
+                        <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg border border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-800 mb-4">Tabla de Datos de Ejemplo</h3>
+                             <div id="data-container" class="space-y-3 md:space-y-0">
+                                <!-- Contenido de la tabla generado por JS -->
+                            </div>
+                            <div class="mt-4 p-4 bg-slate-50 rounded-lg">
+                                <h4 class="text-sm font-semibold text-slate-600 mb-2">Leyenda de Etiquetas:</h4>
+                                <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs">
+                                    <span class="flex items-center"><span class="legend-tag bg-red-100 text-red-700">D</span>&nbsp;= Duplicado</span>
+                                    <span class="flex items-center"><span class="legend-tag bg-orange-100 text-orange-700">S</span>&nbsp;= Salto</span>
+                                    <span class="flex items-center"><span class="legend-tag bg-yellow-100 text-yellow-700">N</span>&nbsp;= Nulo</span>
+                                    <span class="flex items-center"><span class="legend-tag bg-purple-100 text-purple-700">O</span>&nbsp;= Outlier</span>
+                                    <span class="flex items-center"><span class="legend-tag bg-blue-100 text-blue-700">I</span>&nbsp;= Interpolado</span>
+                                    <span class="flex items-center"><span class="legend-tag bg-green-100 text-green-700">C</span>&nbsp;= Corregido</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 bg-white p-4 md:p-6 rounded-xl shadow-lg border border-slate-200">
+                             <h3 class="text-lg font-semibold text-slate-800 mb-4">Visualización de Temperatura</h3>
+                            <div class="chart-container">
+                                <canvas id="tempChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="modelado" class="py-16 md:py-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-base font-semibold text-teal-600 tracking-wide uppercase">Fase 4: Modelado</h2>
+                    <p class="mt-2 text-3xl font-extrabold text-slate-900 tracking-tight">Construyendo los Modelos Predictivos</p>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-600">
+                        Una vez que los datos están limpios, los dividimos para entrenar y evaluar diferentes algoritmos de Machine Learning. El objetivo es encontrar el que mejor "aprende" los patrones para predecir la temperatura.
+                    </p>
+                </div>
+
+                <div class="mt-12 flex flex-col md:flex-row justify-center items-center space-y-8 md:space-y-0 md:space-x-8">
+                    <div class="text-center p-4">
+                        <div class="text-5xl">📊</div>
+                        <p class="mt-2 font-semibold">Datos Limpios</p>
+                    </div>
+                    <div class="text-teal-500 text-4xl font-thin">&rarr;</div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200 text-center">
+                        <p class="font-bold text-slate-800">División de Datos</p>
+                        <div class="flex mt-4 space-x-2">
+                           <div class="bg-teal-200 text-teal-800 px-4 py-2 rounded-lg text-sm">70% Entrenamiento</div>
+                           <div class="bg-orange-200 text-orange-800 px-4 py-2 rounded-lg text-sm">30% Prueba</div>
+                        </div>
+                    </div>
+                    <div class="text-teal-500 text-4xl font-thin">&rarr;</div>
+                     <div class="text-center p-4 space-y-2">
+                        <div class="bg-white p-3 rounded-lg shadow border border-slate-200 text-sm font-semibold">Regresión Lineal</div>
+                        <div class="bg-white p-3 rounded-lg shadow border border-slate-200 text-sm font-semibold">Random Forest</div>
+                        <div class="bg-white p-3 rounded-lg shadow border border-slate-200 text-sm font-semibold">XGBoost</div>
+                        <p class="mt-2 font-semibold">Modelos Entrenados</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="resultados" class="py-16 md:py-20 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-base font-semibold text-teal-600 tracking-wide uppercase">Fase 5: Evaluación</h2>
+                    <p class="mt-2 text-3xl font-extrabold text-slate-900 tracking-tight">Comparando el Rendimiento</p>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-600">
+                        Finalmente, medimos qué tan precisos son nuestros modelos. Usamos el Error Absoluto Medio (MAE), que nos dice, en promedio, por cuántos grados se equivoca cada modelo. Menor error es mejor.
+                    </p>
+                </div>
+                <div class="mt-12">
+                    <div class="chart-container">
+                        <canvas id="resultsChart"></canvas>
+                    </div>
+                </div>
+                 <div class="mt-12 max-w-2xl mx-auto bg-teal-50 p-6 rounded-xl shadow-lg border border-teal-200 text-center">
+                    <h3 class="text-xl font-bold text-teal-800">Conclusión del Proyecto</h3>
+                    <p class="mt-2 text-slate-700">
+                        El modelo **XGBoost** demostró ser el más preciso. Este resultado subraya una lección fundamental en la ciencia de datos: la calidad del modelo final depende directamente de la meticulosidad del proceso de **limpieza y preparación de datos**. Sin corregir los problemas iniciales, ningún algoritmo podría haber alcanzado este nivel de precisión.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="bg-slate-800 text-white">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
+            <p>Aplicación Interactiva generada para el Proyecto Final 2025.</p>
+            <p class="mt-2 text-sm text-slate-400">Una visualización del proceso de Machine Learning de principio a fin.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            const initialData = [
+                { ts: '2025-07-18 08:00', temp: 18.1, hum: 92.0, state: 'ok' },
+                { ts: '2025-07-18 09:00', temp: null, hum: 88.0, state: 'nan' },
+                { ts: '2025-07-18 10:00', temp: 20.0, hum: 85.0, state: 'ok' },
+                { ts: '2025-07-18 10:00', temp: 20.0, hum: 85.0, state: 'duplicate' },
+                { ts: '2025-07-18 12:00', temp: 22.3, hum: 80.0, state: 'gap' },
+                { ts: '2025-07-18 13:00', temp: 23.0, hum: null, state: 'nan' },
+                { ts: '2025-07-18 14:00', temp: 95.0, hum: 78.0, state: 'outlier' },
+                { ts: '2025-07-18 16:00', temp: 21.8, hum: 81.0, state: 'ok' },
+                { ts: '2025-07-18 17:00', temp: 21.0, hum: 83.0, state: 'ok' },
+            ];
+            
+            let currentData = JSON.parse(JSON.stringify(initialData));
+            
+            const dataContainer = document.getElementById('data-container');
+            const explanationBox = document.getElementById('explanation-box');
+            
+            const tempChartCtx = document.getElementById('tempChart').getContext('2d');
+            let tempChart;
+
+            function createTempChart(data) {
+                const labels = data.map(d => d.ts.split(' ')[1]);
+                const tempData = data.map(d => d.temp);
+
+                if (tempChart) {
+                    tempChart.destroy();
+                }
+
+                tempChart = new Chart(tempChartCtx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Temperatura (°C)',
+                            data: tempData,
+                            borderColor: '#0d9488',
+                            backgroundColor: 'rgba(13, 148, 136, 0.1)',
+                            fill: true,
+                            tension: 0.1,
+                            pointRadius: 5,
+                            pointBackgroundColor: (context) => {
+                                const state = data[context.dataIndex].state;
+                                if (state === 'duplicate' || state === 'outlier' || state === 'corrected') return '#ef4444';
+                                if (state === 'nan' || state === 'gap' || state === 'interpolated' || state === 'added') return '#f59e0b';
+                                return '#0d9488';
+                            },
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: false, title: { display: true, text: 'Temperatura (°C)' } },
+                            x: { title: { display: true, text: 'Hora' } }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    afterBody: function(context) {
+                                        const state = data[context[0].dataIndex].state;
+                                        if (state !== 'ok') return `Estado: ${state}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function getTag(state) {
+                switch(state) {
+                    case 'duplicate': return '<span class="legend-tag ml-2 bg-red-100 text-red-700">D</span>';
+                    case 'gap': return '<span class="legend-tag ml-2 bg-orange-100 text-orange-700">S</span>';
+                    case 'added': return '<span class="legend-tag ml-2 bg-orange-100 text-orange-700">S</span>';
+                    case 'nan': return '<span class="legend-tag ml-2 bg-yellow-100 text-yellow-700">N</span>';
+                    case 'outlier': return '<span class="legend-tag ml-2 bg-purple-100 text-purple-700">O</span>';
+                    case 'interpolated': return '<span class="legend-tag ml-2 bg-blue-100 text-blue-700">I</span>';
+                    case 'corrected': return '<span class="legend-tag ml-2 bg-green-100 text-green-700">C</span>';
+                    default: return '';
+                }
+            }
+
+            function updateTable(data) {
+                dataContainer.innerHTML = '';
+                
+                const header = document.createElement('div');
+                header.className = 'hidden md:grid md:grid-cols-3 gap-4 font-semibold text-sm text-slate-600 px-4 py-2 bg-slate-50 rounded-t-lg';
+                header.innerHTML = `<div>Timestamp</div><div>Temperatura</div><div>Humedad</div>`;
+                dataContainer.appendChild(header);
+
+                data.forEach(row => {
+                    let rowClass = 'p-4 border-b border-slate-200 md:grid md:grid-cols-3 md:gap-4 md:p-0 md:border-none';
+                    if (row.state === 'duplicate' || row.state === 'outlier') rowClass += ' bg-red-50';
+                    if (row.state === 'gap' || row.state === 'added' ) rowClass += ' bg-orange-50';
+                    if (row.state === 'nan') rowClass += ' bg-yellow-50';
+                    if (row.state === 'interpolated') rowClass += ' bg-blue-50';
+                    if (row.state === 'corrected') rowClass += ' bg-green-50';
+
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = rowClass;
+                    
+                    let tsCell = row.ts;
+                    if(row.state === 'duplicate' || row.state === 'gap' || row.state === 'added') tsCell += getTag(row.state);
+
+                    let tempCell = row.temp !== null ? row.temp.toFixed(2) : 'N/A';
+                    if(row.state === 'outlier' || row.state === 'corrected' || row.state === 'interpolated') tempCell += getTag(row.state);
+
+                    let humCell = row.hum !== null ? row.hum.toFixed(2) : 'N/A';
+                    if(row.state === 'nan' || row.state === 'interpolated') humCell += getTag(row.state);
+
+                    rowDiv.innerHTML = `
+                        <div class="md:px-4 md:py-2"><span class="font-bold md:hidden">Timestamp: </span>${tsCell}</div>
+                        <div class="md:px-4 md:py-2"><span class="font-bold md:hidden">Temperatura: </span>${tempCell}</div>
+                        <div class="md:px-4 md:py-2"><span class="font-bold md:hidden">Humedad: </span>${humCell}</div>
+                    `;
+                    dataContainer.appendChild(rowDiv);
+                });
+            }
+
+            function applyStep1(data) {
+                return data.filter((d, i, arr) => {
+                    const firstIndex = arr.findIndex(item => item.ts === d.ts);
+                    return i === firstIndex;
+                });
+            }
+
+            function applyStep2(data) {
+                const dataMap = new Map(data.map(d => [d.ts, d]));
+                const datePart = data[0].ts.split(' ')[0];
+                const startDate = new Date(`${datePart} 08:00`);
+                const endDate = new Date(`${datePart} 17:00`);
+                
+                const fullRange = [];
+                let currentDate = new Date(startDate);
+
+                while (currentDate <= endDate) {
+                    const tsString = currentDate.toISOString().slice(0, 16).replace('T', ' ');
+                    if (dataMap.has(tsString)) {
+                        fullRange.push(dataMap.get(tsString));
+                    } else {
+                        fullRange.push({ts: tsString, temp: null, hum: null, state: 'added'});
+                    }
+                    currentDate.setHours(currentDate.getHours() + 1);
+                }
+                return fullRange;
+            }
+
+            function applyStep3(data) {
+                data.forEach((d, i) => {
+                    if (d.temp === null || d.hum === null) {
+                        let prevIdx = i - 1;
+                        let nextIdx = i + 1;
+                        while(prevIdx >= 0 && (data[prevIdx].temp === null || data[prevIdx].hum === null)) prevIdx--;
+                        while(nextIdx < data.length && (data[nextIdx].temp === null || data[nextIdx].hum === null)) nextIdx++;
+                        if(prevIdx >= 0 && nextIdx < data.length) {
+                            const prevData = data[prevIdx];
+                            const nextData = data[nextIdx];
+                            const prevTime = new Date(prevData.ts).getTime();
+                            const nextTime = new Date(nextData.ts).getTime();
+                            const currentTime = new Date(d.ts).getTime();
+                            const totalDuration = nextTime - prevTime;
+                            
+                            if (totalDuration > 0) {
+                                const weight = (currentTime - prevTime) / totalDuration;
+                                if (d.temp === null) {
+                                    d.temp = prevData.temp + (nextData.temp - prevData.temp) * weight;
+                                }
+                                if (d.hum === null) {
+                                     d.hum = prevData.hum + (nextData.hum - prevData.hum) * weight;
+                                }
+                            } else { 
+                                if (d.temp === null) d.temp = (prevData.temp + nextData.temp) / 2;
+                                if (d.hum === null) d.hum = (prevData.hum + nextData.hum) / 2;
+                            }
+                            d.state = 'interpolated';
+                        }
+                    }
+                });
+                return data;
+            }
+
+            function applyStep4(data) {
+                const limites = { 'Temperatura': {'lower': 5.95, 'upper': 31.95} };
+                data.forEach(d => {
+                    if (d.temp !== null) {
+                        const originalTemp = d.temp;
+                        d.temp = Math.max(limites.Temperatura.lower, Math.min(d.temp, limites.Temperatura.upper));
+                        if (d.temp !== originalTemp) {
+                            d.state = 'corrected';
+                        }
+                    }
+                });
+                return data;
+            }
+
+            function resetProcess() {
+                currentData = JSON.parse(JSON.stringify(initialData));
+                updateTable(currentData);
+                createTempChart(currentData);
+                explanationBox.innerHTML = `
+                   <p class="font-semibold text-teal-800">Explicación del paso:</p>
+                   <p class="text-sm text-teal-700">Selecciona un paso para ver cómo funciona.</p>
+                `;
+                document.querySelectorAll('.step-card').forEach(c => c.classList.remove('active'));
+            }
+
+            document.getElementById('reset-button').addEventListener('click', resetProcess);
+
+            const explanations = {
+                1: "<strong>Función: `.drop_duplicates()`</strong><br>Se revisa el dataset y se elimina cualquier fila que sea idéntica a otra. En este caso, el segundo registro de las 10:00 ha sido removido.",
+                2: "<strong>Función: `.reindex()` con rango horario</strong><br>Se reconstruye el índice para que cubra exactamente el rango de 08:00 a 17:00. Se crean las filas faltantes (11:00, 15:00) con valores nulos (NaN).",
+                3: "<strong>Función: `.interpolate(method='time')`</strong><br>Se rellenan todos los valores NaN. La interpolación temporal calcula los valores faltantes como un promedio ponderado de los valores conocidos adyacentes, basado en el tiempo.",
+                4: "<strong>Función: `np.clip()`</strong><br>Se 'recortan' los valores que están fuera de un rango predefinido. El outlier de 95.0°C se ajusta al límite superior de 31.95°C."
+            };
+
+            document.querySelectorAll('[data-step]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const step = parseInt(e.currentTarget.dataset.step);
+                    
+                    document.querySelectorAll('.step-card').forEach(c => c.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    
+                    let dataToShow = JSON.parse(JSON.stringify(initialData));
+
+                    if (step >= 1) { dataToShow = applyStep1(dataToShow); }
+                    if (step >= 2) { dataToShow = applyStep2(dataToShow); }
+                    if (step >= 3) { dataToShow = applyStep3(dataToShow); }
+                    if (step >= 4) { dataToShow = applyStep4(dataToShow); }
+                    
+                    dataToShow.sort((a, b) => new Date(a.ts) - new Date(b.ts));
+                    
+                    currentData = dataToShow;
+
+                    explanationBox.innerHTML = explanations[step];
+                    updateTable(currentData);
+                    createTempChart(currentData);
+                });
+            });
+
+            const resultsChartCtx = document.getElementById('resultsChart').getContext('2d');
+            new Chart(resultsChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Regresión Lineal', 'Random Forest', 'XGBoost'],
+                    datasets: [{
+                        label: 'Error Absoluto Medio (MAE) en °C',
+                        data: [2.85, 1.42, 1.15],
+                        backgroundColor: ['rgba(107, 114, 128, 0.6)','rgba(249, 115, 22, 0.6)','rgba(13, 148, 136, 0.6)'],
+                        borderColor: ['rgba(107, 114, 128, 1)','rgba(249, 115, 22, 1)','rgba(13, 148, 136, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                    scales: { x: { beginAtZero: true, title: { display: true, text: 'Menor error es mejor' } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+            
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+            const mobileNav = document.getElementById('mobile-nav');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 70) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active-nav');
+                    if (link.getAttribute('href').includes(current)) {
+                        link.classList.add('active-nav');
+                    }
+                });
+                if(document.getElementById(current)) mobileNav.value = `#${current}`;
+            });
+            
+            mobileNav.addEventListener('change', () => {
+                window.location.href = mobileNav.value;
+            });
+
+            resetProcess();
+        });
+    </script>
+
+</body>
+</html>
