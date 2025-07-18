@@ -1,2 +1,1 @@
-# Semana7
-Semana7
+# ir a la pagina: https://esantostic.github.io/Semana7/
